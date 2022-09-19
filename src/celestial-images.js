@@ -102,11 +102,13 @@
 
 class AnimatedImage {
 
+    id;
     images;
     currentIndex = 0;
     replaceString = "%%";
 
-    constructor(path, name, numImages) {
+    constructor(id, path, name, numImages) {
+        this.id = id;
         this.images = [];
 
         for (let i = 0; i < numImages; i++) {
@@ -128,23 +130,45 @@ class AnimatedImage {
     }
 }
 
-const test = new AnimatedImage("data-custom/36", "frame_%%_delay-0.01s.png", 59);
+const test = new AnimatedImage("36", "data-custom/36", "frame_%%_delay-0.01s.png", 59);
 
 const image = new Image();
 image.src = "data-custom/36.gif";
 
 var config = {
-    projection: "airy",
-    center: [-65, 0],
-    background: { fill: "#fff", stroke: "#000", opacity: 1, width: 1 },
-    datapath: "https://ofrohn.github.io/data/",
+    width: 0,     // Default width, 0 = full parent width; height is determined by projection
+    projection: "aitoff",
+    projectionRatio: null,
+    transform: "equatorial",
+    center: null,
+    // center: [-65, 0],
+    orientationfixed: true,
+    background: { fill: "#000000", stroke: "#000000", opacity: 1 },
+    adaptable: true,
+    interactive: true,
+    disableAnimations: false,
+    form: false,
+    location: false,    // Display location settings
+    controls: true,
+    container: "celestial-map",
+    datapath: "data",
     stars: {
-        colors: false,
-        names: false,
-        style: { fill: "#000", opacity: 1 },
-        limit: 6,
-        size: 5
-    },
+        show: true,    // Show stars
+        limit: 6,      // Show only stars brighter than limit magnitude
+        colors: true,  // Show stars in spectral colors, if not use "color"
+        style: { fill: "#ffffff", opacity: 1 }, // Default style for stars
+        names: true,   // Show star names (Bayer, Flamsteed, Variable star, Gliese, whichever applies first)
+        proper: true, // Show proper name (if present)
+        desig: false,  // Show all names, including Draper and Hipparcos
+        namelimit: 2.5,  // Show only names for stars brighter than namelimit
+        namestyle: { fill: "#ddddbb", font: "11px Georgia, Times, 'Times Roman', serif", align: "left", baseline: "top" },
+        propernamestyle: { fill: "#ddddbb", font: "11px Georgia, Times, 'Times Roman', serif", align: "right", baseline: "bottom" },
+        propernamelimit: 1.5,  // Show proper names for stars brighter than propernamelimit
+        size: 7,       // Maximum size (radius) of star circle in pixels
+        exponent: -0.28, // Scale exponent for star size, larger = more linear
+        data: 'stars.6.json' // Data source for stellar data
+        //data: 'stars.8.json' // Alternative deeper data source for stellar data
+      },
     dsos: { show: false },
     mw: {
         style: { fill: "#996", opacity: 0.1 }
@@ -172,22 +196,23 @@ var jsonLine = {
     "features": [
         {
             "type": "Feature",
-            "id": "SummerTriangle",
+            "id": "36",
             "properties": {
                 // Name
-                "n": "Summer Triangle",
+                // "n": "Summer Triangle",
                 // Location of name text on the map
                 "loc": [-67.5, 52]
-            }, "geometry": {
-                // the line object as an array of point coordinates
-                "type": "MultiLineString",
-                "coordinates": [[
-                    [-80.7653, 38.7837],
-                    [-62.3042, 8.8683],
-                    [-49.642, 45.2803],
-                    [-80.7653, 38.7837]
-                ]]
-            }
+            }, 
+            // "geometry": {
+            //     // the line object as an array of point coordinates
+            //     "type": "MultiLineString",
+            //     "coordinates": [[
+            //         [-80.7653, 38.7837],
+            //         [-62.3042, 8.8683],
+            //         [-49.642, 45.2803],
+            //         [-80.7653, 38.7837]
+            //     ]]
+            // }
         }
     ]
 };
@@ -211,7 +236,6 @@ Celestial.add({
     },
 
     redraw: function () {
-
         // Select the added objects by class name as given previously
         Celestial.container.selectAll(".ast").each(function (d) {
             // Set line styles
@@ -227,14 +251,18 @@ Celestial.add({
                 // get point coordinates
                 pt = Celestial.mapProjection(d.properties.loc);
                 // Set text styles
-                Celestial.setTextStyle(textStyle);
+                // Celestial.setTextStyle(textStyle);
                 // and draw text on canvas
-                Celestial.context.fillText(d.properties.n, pt[0], pt[1]);
+                // Celestial.context.fillText(d.properties.n, pt[0], pt[1]);
                 
                 const currentImage = test.getImage();
-                const xOff = currentImage.width / 2;
-                const yOff = currentImage.height / 2;
-                Celestial.context.drawImage(currentImage, pt[0] - xOff, pt[1] - yOff);
+                // const xOff = currentImage.width / 2;
+                // const yOff = currentImage.height / 2;
+                const imgWidth = Celestial.context.canvas.width / 10;
+                const imgHeight = currentImage.height / (currentImage.width / imgWidth);
+                const xOff = imgWidth / 2;
+                const yOff = imgHeight / 2;
+                Celestial.context.drawImage(currentImage, pt[0] - xOff, pt[1] - yOff, imgWidth, imgHeight);
                 // console.log(image)
             }
         });
@@ -243,9 +271,20 @@ Celestial.add({
 
 Celestial.display(config);
 
-test = setInterval(
+
+d3.select('#celestial-map').on('mousedown', function () { clearInterval(refreshInterval) })
+d3.select('#celestial-map').on('mouseup', function () { 
+    refreshInterval = setInterval(
+        () => {
+            Celestial.redraw();
+        },
+        20
+    );
+ })
+
+refreshInterval = setInterval(
     () => {
         Celestial.redraw();
     },
-    100
+    20
 );
