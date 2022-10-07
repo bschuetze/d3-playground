@@ -292,7 +292,8 @@ function setup() {
                         "id": id,
                         "properties": {
                             "loc": [
-                                point["dec"], point["ra"]
+                                hour2degree(point["ra"]), point["dec"]
+                                // point["dec"], point["ra"]
                             ]
                         }
                     }
@@ -335,18 +336,22 @@ function setup() {
                         if (Celestial.clip(d.properties.loc)) {
                             // get point coordinates
                             pt = Celestial.mapProjection(d.properties.loc);
+                            Celestial.context.rect(pt[0], pt[1], 10, 10);
+                            Celestial.context.fill();
                             // Set text styles
                             // Celestial.setTextStyle(textStyle);
                             // and draw text on canvas
                             // Celestial.context.fillText(d.properties.n, pt[0], pt[1]);
                             if (animatedImages[d.id] != undefined) {
                                 const currentImage = animatedImages[d.id].getImage();
-                                const xOff = currentImage.width / 2;
-                                const yOff = currentImage.height / 2;
+                                // const xOff = 0;
+                                // const yOff = 0;
+                                // const xOff = currentImage.width / 2;
+                                // const yOff = currentImage.height / 2;
                                 const imgWidth = Celestial.context.canvas.width / 10;
                                 const imgHeight = currentImage.height / (currentImage.width / imgWidth);
-                                // const xOff = imgWidth / 2;
-                                // const yOff = imgHeight / 2;
+                                const xOff = imgWidth / 2;
+                                const yOff = imgHeight / 2;
                                 Celestial.context.drawImage(currentImage, pt[0] - xOff, pt[1] - yOff, imgWidth, imgHeight);
                                 // console.log(image)
                             }
@@ -380,6 +385,9 @@ function setup() {
 
 setup();
 
+function hour2degree(ra) { 
+    return ra > 12 ? (ra - 24) * 15 : ra * 15;
+}
 
 /*
 
