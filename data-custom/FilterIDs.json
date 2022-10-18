@@ -1,0 +1,94 @@
+[
+  {
+    "Name": "A. Alexander",
+    "IDs": [2,16,17, 25, 30, 40]
+  },
+  {
+    "Name": "H. M. Browne",
+    "IDs": [5, 17, 18, 19, 20, 21, 22, 23, 24]
+  },
+  {
+    "Name": "C. Frayne",
+    "IDs": [6, 18]
+  },
+  {
+    "Name": "M. C. Greer",
+    "IDs": [7, 38]
+  },
+  {
+    "Name": "Muriel Heagney",
+    "IDs": [8, 19, 15, 16, 31, 41, 48]
+  },
+  {
+    "Name": "Evelyn Hockin",
+    "IDs": [3, 20, 27, 28, 32, 42]
+  },
+  {
+    "Name": "N. E. McKay",
+    "IDs": [9, 21, 33]
+  },
+  {
+    "Name": "G. M. Moore",
+    "IDs": [10, 22, 29, 43]
+  },
+  {
+    "Name": "Victoria Noonan",
+    "IDs": [11, 23, 26, 44]
+  },
+  {
+    "Name": "G. O'Donnell",
+    "IDs": [12, 27, 29, 45]
+  },
+  {
+    "Name": "Charlotte Peel",
+    "IDs": [13, 24, 30, 31, 32, 33, 34, 35, 36]
+  },
+  {
+    "Name": "R. Rayson",
+    "IDs": [14, 28, 34, 37, 36]
+  },
+  {
+    "Name": "B. C. Scott",
+    "IDs": [15, 35, 38, 39]
+  },
+  {
+    "Name": "Eileen Sheldon",
+    "IDs": [1, 36, 39, 40, 41, 42, 43, 44, 45, 46, 47]
+  },
+  {
+    "Name": "I. Trigge",
+    "IDs": [4, 16, 37, 47, 48]
+  },
+  {
+    "Name": "E L",
+    "IDs": [49]
+  },
+  {
+    "Name": "L",
+    "IDs": [50]
+  },
+  {
+    "Name": "L P",
+    "IDs": [51]
+  },
+  {
+    "Name": "L S",
+    "IDs": [52]
+  },
+  {
+    "Name": "M P",
+    "IDs": [53, 55]
+  },
+  {
+    "Name": "M S",
+    "IDs": [54, 55]
+  },
+  {
+    "Name": "P S",
+    "IDs": [56]
+  },
+  {
+    "Name": "W H",
+    "IDs": [57]
+  }
+]
