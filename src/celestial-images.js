@@ -108,6 +108,18 @@ function hour2degree(ra) {
     return ra > 12 ? (ra - 24) * 15 : ra * 15;
 }
 
+const MACHINES = [
+    "Rep1",
+    "Rep2",
+    "Slide",
+    "Slide1",
+    "Syd",
+    "Syd2",
+    "SydA",
+    "SydB",
+    "Comb"
+];
+
 class AnimatedImage {
 
     id;
@@ -188,22 +200,39 @@ class DisplayFilter {
     nameMaps;
 
     filtersEnabled;
-    enableNameFilter;
-    enableYearFilter;
+    nameFilterEnabled;
+    yearFilterEnabled;
+    machineFilterEnabled;
+
+    nameFilteredDataPoints;
+    yearFilteredDataPoints;
+    machineFilteredDataPoints
+
+    selectedMachines;
 
     selectedMinYear;
-    selectedMaxYear;selectedMaxYear
+    selectedMaxYear;
     minYear;
     maxYear;
 
     constructor() {
         this.dataPoints = {};
-        this.currentlyVisiblePoints = {};
+        this.currentlyVisiblePoints = new Set();
         this.nameMaps = {};
 
+        this.selectedMachines = {};
+        for (const machine of MACHINES) {
+            this.selectedMachines[machine] = false;
+        }
+
         this.filtersEnabled = 0;
-        this.enableNameFilter = false;
-        this.enableYearFilter = false;
+        this.nameFilterEnabled = false;
+        this.yearFilterEnabled = false;
+        this.machineFilterEnabled = false;
+
+        this.nameFilteredDataPoints = new Set();
+        this.yearFilteredDataPoints = new Set();
+        this.machineFilteredDataPoints = new Set();
         
         this.selectedMinYear = undefined;
         this.selectedMaxYear = undefined;
@@ -213,11 +242,14 @@ class DisplayFilter {
 
     registerNameFilter(name, ids) {
         if (name in this.nameMaps) {
-            console.error(`Name filter already contains name: ${name}`, ids, this.nameMaps[name]);
+            console.error(`Name filter already contains name: ${name}`, ids, this.nameMaps[name].ids);
             return;
         }
 
-        this.nameMaps[name] = ids;
+        this.nameMaps[name] = {
+            "ids": ids,
+            "enabled": false,
+        };
     }
 
     registerDataPoint(dataPoint) {
@@ -229,14 +261,191 @@ class DisplayFilter {
         this.dataPoints[dataPoint.uid] = dataPoint;
     }
 
-    displayPoint(pointID) {
-        this.currentlyVisiblePoints[pointID] = true;
-        const imageID = this.dataPoints[pointID].observerID;
-        animatedImages[imageID].load();
+    enableNameFilter(name) {
+        if (!(name in this.nameMaps)) {
+            console.error(`Name filter does not contain name: ${name}`);
+            return;
+        }
+
+        if (this.nameMaps[name]["enabled"]) {
+            console.info(`Name filter for ${name} is already enabled`);
+            return;
+        }
+
+        this.nameMaps[name]["enabled"] = true;
+
+        this.updateNameFilteredDataPoints();
     }
 
+    disableNameFilter(name) {
+        if (!(name in this.nameMaps)) {
+            console.error(`Name filter does not contain name: ${name}`);
+            return;
+        }
+
+        if (!this.nameMaps[name]["enabled"]) {
+            console.info(`Name filter for ${name} is already disabled`);
+            return;
+        }
+
+        this.nameMaps[name]["enabled"] = false;
+
+        this.updateNameFilteredDataPoints();
+    }
+
+    updateNameFilteredDataPoints() {
+        let visibleIDs = new Set();
+        this.nameFilteredDataPoints = new Set();
+
+        for (const name in this.nameMaps) {
+            const nameFilter = this.nameMaps[name];
+            if (nameFilter["enabled"]) {
+                for (const id of nameFilter["ids"]) {
+                    visibleIDs.add(id);
+                }
+            }
+        }
+
+        if (visibleIDs.size == 0) {
+            this.nameFilterEnabled = false;
+        } else {
+            for (const dataPointID in this.dataPoints) {
+                const dataPoint = this.dataPoints[dataPointID];
+                if (visibleIDs.has(dataPoint["observerID"])) {
+                    this.nameFilteredDataPoints.add(dataPoint["uid"]);
+                }
+            }
+        }
+
+        this.updateFilteredDataPoints();
+    }
+
+    enableYearFilter(startYear, endYear) {
+        if (startYear == undefined && endYear == undefined) {
+            console.error("At least one of Start Year or End Year must be defined");
+            return;
+        }
+
+        if (startYear == undefined) {
+            startYear = this.minYear;
+        }
+        if (endYear == undefined) {
+            endYear = this.maxYear;
+        }
+
+        this.selectedMinYear = startYear;
+        this.selectedMaxYear = endYear;
+
+        this.updateYearFilter();
+    }
+
+    disableYearFilter() {
+        this.selectedMinYear = undefined;
+        this.selectedMaxYear = undefined;
+
+        this.updateYearFilter();
+    }
+
+    updateYearFilter() {
+        this.yearFilteredDataPoints = new Set();
+        if (this.selectedMinYear != undefined && this.selectedMaxYear != undefined) {
+            for (const dataPointID in this.dataPoints) {
+                const dataPoint = this.dataPoints[dataPointID];
+                if (dataPoint["year"] >= this.selectedMinYear && dataPoint["year"] <= this.selectedMaxYear) {
+                    this.yearFilteredDataPoints.add(dataPoint["uid"]);
+                }
+            }
+        }
+
+        this.updateFilteredDataPoints();
+    }
+
+
+    enableMachineFilter(machineName) {
+        if (!(machineName in this.selectedMachines)) {
+            console.error(`List of machines does not include ${machineName}`);
+            return;
+        }
+
+        if (this.selectedMachines[machineName]) {
+            console.log(`Filter for machine ${machineName} is already enabled`);
+            return;
+        }
+
+        this.selectedMachines[machineName] = true;
+
+        this.updateMachineFilter();
+    }
+
+    disableMachineFilter(machineName) {
+        if (!(machineName in this.selectedMachines)) {
+            console.error(`List of machines does not include ${machineName}`);
+            return;
+        }
+
+        if (!this.selectedMachines[machineName]) {
+            console.log(`Filter for machine ${machineName} is already disabled`);
+            return;
+        }
+
+        this.selectedMachines[machineName] = false;
+
+        this.updateMachineFilter();
+    }
+
+    updateMachineFilter() {
+        this.machineFilteredDataPoints = new Set();
+
+        let visibleMachineNames = new Set();
+        for (const machine in this.selectedMachines) {
+            if (this.selectedMachines[machine]) {
+                visibleMachineNames.add(machine);
+            }
+        }
+
+        if (visibleMachineNames.size > 0) {
+            for (const dataPointID in this.dataPoints) {
+                const dataPoint = this.dataPoints[dataPointID];
+                if (visibleMachineNames.has(dataPoint["machine"])) {
+                    this.machineFilteredDataPoints.add(dataPoint["uid"]);
+                }
+            }
+        }
+
+        this.updateFilteredDataPoints();
+    }
+
+
+    updateFilteredDataPoints() {
+        this.currentlyVisiblePoints = this.nameFilteredDataPoints;
+    
+        if (this.yearFilteredDataPoints.size > 0) {
+            this.currentlyVisiblePoints = new Set([...this.currentlyVisiblePoints].filter(x => this.yearFilteredDataPoints.has(x)));
+        }
+    
+        if (this.machineFilteredDataPoints.size > 0) {
+            this.currentlyVisiblePoints = new Set([...this.currentlyVisiblePoints].filter(x => this.machineFilteredDataPoints.has(x)));
+        }
+
+        let visibleImages = new Set();
+
+        for (const pointID of this.currentlyVisiblePoints.values()) {
+            visibleImages.add(this.dataPoints[pointID].observerID);
+        }
+
+        for (const imageID of visibleImages.values()) {
+            animatedImages[imageID].load();
+        }
+    }
+
+    // displayPoint(pointID) {
+    //     // this.currentlyVisiblePoints[pointID] = true;
+    //     const imageID = this.dataPoints[pointID].observerID;
+    //     animatedImages[imageID].load();
+    // }
+
     pointDisplaying(pointID) {
-        return pointID in this.currentlyVisiblePoints;
+        return this.currentlyVisiblePoints.has(pointID);
     }
 }
 const DF = new DisplayFilter();
@@ -301,6 +510,7 @@ const imageCount = {
     57: 40
 };
 
+const NAME_FILTER_DATA = "data-custom/FilterIDs.json";
 const PLATE_DATA_FILE = "data-custom/FilterData.json";
 
 const rateLimit = false;
@@ -388,6 +598,18 @@ function setup() {
         );
     }
 
+    // Load name filter data
+    fetch(NAME_FILTER_DATA)
+        .then(response => response.json())
+        .then(data => {
+            for (const nameData of data) {
+                DF.registerNameFilter(
+                    nameData["Name"],
+                    nameData["IDs"]
+                );
+            }
+        }
+    );
 
     // Load data
     fetch(PLATE_DATA_FILE)
@@ -445,7 +667,6 @@ function setup() {
                     // Select the added objects by class name as given previously
                     Celestial.container.selectAll(".ast").each(function (d) {
                         if (DF.pointDisplaying(d.uid)) {
-                            console.log("Displaying", d)
                             // Set line styles
                             Celestial.setStyle(lineStyle);
                             // Project objects on map
@@ -465,6 +686,9 @@ function setup() {
 
                                 if (animatedImages[d.image_id] != undefined) {
                                     const currentImage = animatedImages[d.image_id].getImage();
+                                    if (currentImage == undefined) {
+                                        return;
+                                    }
 
                                     const imgWidth = Celestial.context.canvas.width / 10;
                                     const imgHeight = currentImage.height / (currentImage.width / imgWidth);
