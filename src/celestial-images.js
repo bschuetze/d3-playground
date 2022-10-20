@@ -203,12 +203,22 @@ class DisplayFilter {
     nameFilterEnabled;
     yearFilterEnabled;
     machineFilterEnabled;
+    decFilterEnabled;
 
     nameFilteredDataPoints;
     yearFilteredDataPoints;
-    machineFilteredDataPoints
+    machineFilteredDataPoints;
+    decFilteredDataPoints;
+    raFilteredDataPoints;
+
+    decMin;
+    decMax;
+    raMin;
+    raMax;
 
     selectedMachines;
+    selectedDecs;
+    selectedRAs;
 
     selectedMinYear;
     selectedMaxYear;
@@ -229,10 +239,27 @@ class DisplayFilter {
         this.nameFilterEnabled = false;
         this.yearFilterEnabled = false;
         this.machineFilterEnabled = false;
+        this.decFilterEnabled = false;
 
         this.nameFilteredDataPoints = new Set();
         this.yearFilteredDataPoints = new Set();
         this.machineFilteredDataPoints = new Set();
+        this.decFilteredDataPoints = new Set();
+        this.raFilteredDataPoints = new Set();
+
+        this.selectedRAs = {};
+        this.raMin = 0;
+        this.raMax = 23;
+        for (let i = this.raMin; i <= this.raMax; i++) {
+            this.selectedRAs[i] = false;
+        }
+
+        this.selectedDecs = {};
+        this.decMin = -64;
+        this.decMax = -55;
+        for (let i = this.decMin; i <= this.decMax; i++) {
+            this.selectedDecs[i] = false;
+        }
         
         this.selectedMinYear = undefined;
         this.selectedMaxYear = undefined;
@@ -361,6 +388,140 @@ class DisplayFilter {
     }
 
 
+    enableDecFilter(declination) {
+        if (declination < this.decMin || declination > this.decMax) {
+            console.error(`Declination must be in range [${this.decMin} - ${this.decMax}]`);
+            return;
+        }
+
+        // Round it
+        if (declination != Math.round(declination)) {
+            console.warn(`Declination should be an integer value, rounding from ${declination} to ${Math.round(declination)}`)
+            declination = Math.round(declination);
+        }
+
+        if (this.selectedDecs[declination]) {
+            console.log(`Filter for declination ${declination} is already enabled`);
+            return;
+        }
+
+        this.selectedDecs[declination] = true;
+
+        this.updateDecFilter();
+    }
+
+    disableDecFilter(declination) {
+        if (declination < this.decMin || declination > this.decMax) {
+            console.error(`Declination must be in range [${this.decMin} - ${this.decMax}]`);
+            return;
+        }
+
+        // Round it
+        if (declination != Math.round(declination)) {
+            console.warn(`Declination should be an integer value, rounding from ${declination} to ${Math.round(declination)}`)
+            declination = Math.round(declination);
+        }
+
+        if (!this.selectedDecs[declination]) {
+            console.log(`Filter for declination ${declination} is already disabled`);
+            return;
+        }
+
+        this.selectedDecs[declination] = false;
+
+        this.updateDecFilter();
+    }
+
+    updateDecFilter() {
+        this.decFilteredDataPoints = new Set();
+
+        let visibleDeclinations = new Set();
+        for (const declination in this.selectedDecs) {
+            if (this.selectedDecs[declination]) {
+                visibleDeclinations.add(Number.parseInt(declination));
+            }
+        }
+
+        if (visibleDeclinations.size > 0) {
+            for (const dataPointID in this.dataPoints) {
+                const dataPoint = this.dataPoints[dataPointID];
+                if (visibleDeclinations.has(dataPoint["dec"])) {
+                    this.decFilteredDataPoints.add(dataPoint["uid"]);
+                }
+            }
+        }
+
+        this.updateFilteredDataPoints();
+    }
+
+
+    enableRAFilter(rightAscension) {
+        // Floor it
+        if (rightAscension != Math.floor(rightAscension)) {
+            console.warn(`Right Ascension should be an integer value, rounding down from ${rightAscension} to ${Math.floor(rightAscension)}`)
+            declination = Math.floor(declination);
+        }
+
+        if (rightAscension < this.raMin || rightAscension > this.raMax) {
+            console.error(`Right Ascension must be in range [${this.raMin} - ${this.raMax}]`);
+            return;
+        }
+
+        if (this.selectedRAs[rightAscension]) {
+            console.log(`Filter for Right Ascension ${rightAscension} is already enabled`);
+            return;
+        }
+
+        this.selectedRAs[rightAscension] = true;
+
+        this.updateRAFilter();
+    }
+
+    disableRAFilter(rightAscension) {
+        // Floor it
+        if (rightAscension != Math.floor(rightAscension)) {
+            console.warn(`Right Ascension should be an integer value, rounding down from ${rightAscension} to ${Math.floor(rightAscension)}`)
+            declination = Math.floor(declination);
+        }
+
+        if (rightAscension < this.raMin || rightAscension > this.raMax) {
+            console.error(`Right Ascension must be in range [${this.raMin} - ${this.raMax}]`);
+            return;
+        }
+
+        if (!this.selectedRAs[rightAscension]) {
+            console.log(`Filter for Right Ascension ${rightAscension} is already disabled`);
+            return;
+        }
+
+        this.selectedRAs[rightAscension] = false;
+
+        this.updateRAFilter();
+    }
+
+    updateRAFilter() {
+        this.raFilteredDataPoints = new Set();
+
+        let visibleRAs = new Set();
+        for (const rightAscension in this.selectedRAs) {
+            if (this.selectedRAs[rightAscension]) {
+                visibleRAs.add(Number.parseInt(rightAscension));
+            }
+        }
+
+        if (visibleRAs.size > 0) {
+            for (const dataPointID in this.dataPoints) {
+                const dataPoint = this.dataPoints[dataPointID];
+                if (visibleRAs.has(Math.floor(dataPoint["ra"]))) {
+                    this.raFilteredDataPoints.add(dataPoint["uid"]);
+                }
+            }
+        }
+
+        this.updateFilteredDataPoints();
+    }
+
+
     enableMachineFilter(machineName) {
         if (!(machineName in this.selectedMachines)) {
             console.error(`List of machines does not include ${machineName}`);
@@ -425,6 +586,14 @@ class DisplayFilter {
     
         if (this.machineFilteredDataPoints.size > 0) {
             this.currentlyVisiblePoints = new Set([...this.currentlyVisiblePoints].filter(x => this.machineFilteredDataPoints.has(x)));
+        }
+    
+        if (this.decFilteredDataPoints.size > 0) {
+            this.currentlyVisiblePoints = new Set([...this.currentlyVisiblePoints].filter(x => this.decFilteredDataPoints.has(x)));
+        }
+    
+        if (this.raFilteredDataPoints.size > 0) {
+            this.currentlyVisiblePoints = new Set([...this.currentlyVisiblePoints].filter(x => this.raFilteredDataPoints.has(x)));
         }
 
         let visibleImages = new Set();
