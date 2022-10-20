@@ -218,12 +218,11 @@ class DisplayFilter {
     raMin;
     raMax;
 
+    selectedYears;
     selectedMachines;
     selectedDecs;
     selectedRAs;
 
-    selectedMinYear;
-    selectedMaxYear;
     minYear;
     maxYear;
 
@@ -263,10 +262,12 @@ class DisplayFilter {
             this.selectedDecs[i] = false;
         }
 
-        this.selectedMinYear = undefined;
-        this.selectedMaxYear = undefined;
+        this.selectedYears = {};
         this.minYear = 1891;
         this.maxYear = 1928;
+        for (let i = this.minYear; i <= this.maxYear; i++) {
+            this.selectedYears[i] = false;
+        }
     }
 
     registerNameFilter(name, ids) {
@@ -303,7 +304,7 @@ class DisplayFilter {
     }
 
     getYearFilterOptions() {
-        return ["1890-1899", "1900-1909", "1910-1919", "1920-1929"];
+        return ["1890 - 1899", "1900 - 1909", "1910 - 1919", "1920 - 1929"];
     }
 
     getMachineFilterOptions() {
@@ -379,38 +380,63 @@ class DisplayFilter {
         this.updateFilteredDataPoints();
     }
 
-    enableYearFilter(startYear, endYear) {
-        if (startYear == undefined && endYear == undefined) {
-            console.error("At least one of Start Year or End Year must be defined");
-            return;
+
+    setYearFilter(years) {
+        // Disable all first
+        for (const year in this.selectedYears) {
+            this._disableYearFilter(year);
         }
 
-        if (startYear == undefined) {
-            startYear = this.minYear;
+        // Enable selected
+        for (const year of years) {
+            this._enableYearFilter(year);
         }
-        if (endYear == undefined) {
-            endYear = this.maxYear;
-        }
-
-        this.selectedMinYear = startYear;
-        this.selectedMaxYear = endYear;
 
         this.updateYearFilter();
     }
 
-    disableYearFilter() {
-        this.selectedMinYear = undefined;
-        this.selectedMaxYear = undefined;
+    _enableYearFilter(year) {
+        if (year < this.minYear || year > this.maxYear) {
+            console.error(`Year must be in range [${this.minYear} - ${this.maxYear}]`);
+            return;
+        }
 
-        this.updateYearFilter();
+        if (this.selectedYears[year]) {
+            // console.log(`Filter for year ${year} is already enabled`);
+            return;
+        }
+
+        this.selectedYears[year] = true;
+    }
+
+    _disableYearFilter(year) {
+        if (year < this.minYear || year > this.maxYear) {
+            console.error(`Year must be in range [${this.minYear} - ${this.maxYear}]`);
+            return;
+        }
+
+        if (!this.selectedYears[year]) {
+            // console.log(`Filter for year ${year} is already disabled`);
+            return;
+        }
+
+        this.selectedYears[year] = false;
     }
 
     updateYearFilter() {
         this.yearFilteredDataPoints = new Set();
-        if (this.selectedMinYear != undefined && this.selectedMaxYear != undefined) {
+
+        let visibleYears = new Set();
+        for (const year in this.selectedYears) {
+            if (this.selectedYears[year]) {
+                visibleYears.add(Number.parseInt(year));
+            }
+        }
+
+        if (visibleYears.size > 0) {
             for (const dataPointID in this.dataPoints) {
                 const dataPoint = this.dataPoints[dataPointID];
-                if (dataPoint["year"] >= this.selectedMinYear && dataPoint["year"] <= this.selectedMaxYear) {
+                if (visibleYears.has(dataPoint["year"])) {
                     this.yearFilteredDataPoints.add(dataPoint["uid"]);
                 }
             }
@@ -420,7 +446,22 @@ class DisplayFilter {
     }
 
 
-    enableDecFilter(declination) {
+    setDecFilter(declinations) {
+        // Disable all first
+        for (const dec in this.selectedDecs) {
+            this._disableDecFilter(dec);
+        }
+
+        // Enable selected
+        for (const dec of declinations) {
+            this._enableDecFilter(dec);
+        }
+
+        this.updateDecFilter();
+    }
+
+
+    _enableDecFilter(declination) {
         if (declination < this.decMin || declination > this.decMax) {
             console.error(`Declination must be in range [${this.decMin} - ${this.decMax}]`);
             return;
@@ -433,16 +474,14 @@ class DisplayFilter {
         }
 
         if (this.selectedDecs[declination]) {
-            console.log(`Filter for declination ${declination} is already enabled`);
+            // console.log(`Filter for declination ${declination} is already enabled`);
             return;
         }
 
         this.selectedDecs[declination] = true;
-
-        this.updateDecFilter();
     }
 
-    disableDecFilter(declination) {
+    _disableDecFilter(declination) {
         if (declination < this.decMin || declination > this.decMax) {
             console.error(`Declination must be in range [${this.decMin} - ${this.decMax}]`);
             return;
@@ -455,13 +494,11 @@ class DisplayFilter {
         }
 
         if (!this.selectedDecs[declination]) {
-            console.log(`Filter for declination ${declination} is already disabled`);
+            // console.log(`Filter for declination ${declination} is already disabled`);
             return;
         }
 
         this.selectedDecs[declination] = false;
-
-        this.updateDecFilter();
     }
 
     updateDecFilter() {
@@ -487,7 +524,21 @@ class DisplayFilter {
     }
 
 
-    enableRAFilter(rightAscension) {
+    setRAFilter(rightAscensionValues) {
+        // Disable all first
+        for (const dec in this.selectedRAs) {
+            this._disableDecFilter(dec);
+        }
+
+        // Enable selected
+        for (const rightAscension of rightAscensionValues) {
+            this._enableRAFilter(rightAscension);
+        }
+
+        this.updateRAFilter();
+    }
+    
+    _enableRAFilter(rightAscension) {
         // Floor it
         if (rightAscension != Math.floor(rightAscension)) {
             console.warn(`Right Ascension should be an integer value, rounding down from ${rightAscension} to ${Math.floor(rightAscension)}`)
@@ -500,16 +551,14 @@ class DisplayFilter {
         }
 
         if (this.selectedRAs[rightAscension]) {
-            console.log(`Filter for Right Ascension ${rightAscension} is already enabled`);
+            // console.log(`Filter for Right Ascension ${rightAscension} is already enabled`);
             return;
         }
 
         this.selectedRAs[rightAscension] = true;
-
-        this.updateRAFilter();
     }
 
-    disableRAFilter(rightAscension) {
+    _disableRAFilter(rightAscension) {
         // Floor it
         if (rightAscension != Math.floor(rightAscension)) {
             console.warn(`Right Ascension should be an integer value, rounding down from ${rightAscension} to ${Math.floor(rightAscension)}`)
@@ -522,13 +571,11 @@ class DisplayFilter {
         }
 
         if (!this.selectedRAs[rightAscension]) {
-            console.log(`Filter for Right Ascension ${rightAscension} is already disabled`);
+            // console.log(`Filter for Right Ascension ${rightAscension} is already disabled`);
             return;
         }
 
         this.selectedRAs[rightAscension] = false;
-
-        this.updateRAFilter();
     }
 
     updateRAFilter() {
@@ -554,36 +601,46 @@ class DisplayFilter {
     }
 
 
-    enableMachineFilter(machineName) {
+    setMachineFilter(machineNames) {
+        // Disable all first
+        for (const machine in this.selectedMachines) {
+            this._disableMachineFilter(machine);
+        }
+
+        // Enable selected
+        for (const machine of machineNames) {
+            this._enableMachineFilter(machine);
+        }
+
+        this.updateMachineFilter();
+    }
+
+    _enableMachineFilter(machineName) {
         if (!(machineName in this.selectedMachines)) {
             console.error(`List of machines does not include ${machineName}`);
             return;
         }
 
         if (this.selectedMachines[machineName]) {
-            console.log(`Filter for machine ${machineName} is already enabled`);
+            // console.log(`Filter for machine ${machineName} is already enabled`);
             return;
         }
 
         this.selectedMachines[machineName] = true;
-
-        this.updateMachineFilter();
     }
 
-    disableMachineFilter(machineName) {
+    _disableMachineFilter(machineName) {
         if (!(machineName in this.selectedMachines)) {
             console.error(`List of machines does not include ${machineName}`);
             return;
         }
 
         if (!this.selectedMachines[machineName]) {
-            console.log(`Filter for machine ${machineName} is already disabled`);
+            // console.log(`Filter for machine ${machineName} is already disabled`);
             return;
         }
 
         this.selectedMachines[machineName] = false;
-
-        this.updateMachineFilter();
     }
 
     updateMachineFilter() {
@@ -655,6 +712,25 @@ function getSelectedOptions(selectElement) {
     return [...selectElement.options].filter(o => o.selected).map(o => o.value);
 }
 
+function getYearsFromRangeString(yearString) {
+    let years = yearString.replace("-", "").split(" ");
+    let startYear = Number.parseInt(years[0]);
+    let endYear = Number.parseInt(years[years.length - 1]);
+
+    if (startYear > endYear) {
+        let tmp = startYear;
+        startYear = endYear;
+        endYear = tmp;
+    }
+
+    let ret = [];
+    for (let i = startYear; i <= endYear; i++) {
+        ret.push(i);
+    }
+
+    return ret;
+}
+
 class FilterForm {
 
     nameSelector;
@@ -677,6 +753,32 @@ class FilterForm {
             // const selectedItems = [...this.nameSelector.options].filter(o => o.selected).map(o => o.value);
             const selectedItems = getSelectedOptions(this.nameSelector);
             DF.setNameFilter(selectedItems);
+        }
+
+        this.rightAscensionSelector.onchange = () => {
+            const selectedItems = getSelectedOptions(this.rightAscensionSelector);
+            DF.setRAFilter(selectedItems);
+        }
+
+        this.declinationSelector.onchange = () => {
+            const selectedItems = getSelectedOptions(this.declinationSelector);
+            DF.setDecFilter(selectedItems);
+        }
+
+        this.yearSelector.onchange = () => {
+            const selectedItems = getSelectedOptions(this.yearSelector);
+
+            let years = [];
+            for (const yearRange of selectedItems) {
+                years = years.concat(getYearsFromRangeString(yearRange));
+            }
+            console.log(years);
+            DF.setYearFilter(years);
+        }
+
+        this.machineSelector.onchange = () => {
+            const selectedItems = getSelectedOptions(this.machineSelector);
+            DF.setMachineFilter(selectedItems);
         }
     }
 
