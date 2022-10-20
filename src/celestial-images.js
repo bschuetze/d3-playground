@@ -104,7 +104,7 @@ function generateID(length) {
     return parseInt(Math.ceil(Math.random() * Date.now()).toPrecision(length).toString().replace(".", ""));
 }
 
-function hour2degree(ra) { 
+function hour2degree(ra) {
     return ra > 12 ? (ra - 24) * 15 : ra * 15;
 }
 
@@ -163,12 +163,14 @@ class AnimatedImage {
 
     getImage() {
         if (this.loaded) {
-            const imageIndex = this.currentIndex;
-            this.currentIndex = (this.currentIndex + 1) % this.images.length;
-            return this.images[imageIndex];
+            return this.images[this.currentIndex];
         } else {
             return undefined;
         }
+    }
+
+    nextImage() {
+        this.currentIndex = (this.currentIndex + 1) % this.images.length;
     }
 }
 
@@ -260,7 +262,7 @@ class DisplayFilter {
         for (let i = this.decMin; i <= this.decMax; i++) {
             this.selectedDecs[i] = false;
         }
-        
+
         this.selectedMinYear = undefined;
         this.selectedMaxYear = undefined;
         this.minYear = 1891;
@@ -288,36 +290,66 @@ class DisplayFilter {
         this.dataPoints[dataPoint.uid] = dataPoint;
     }
 
-    enableNameFilter(name) {
+    getNameFilterOptions() {
+        return Object.keys(this.nameMaps);
+    }
+
+    getRAFilterOptions() {
+        return Object.keys(this.selectedRAs);
+    }
+
+    getDecFilterOptions() {
+        return Object.keys(this.selectedDecs);
+    }
+
+    getYearFilterOptions() {
+        return ["1890-1899", "1900-1909", "1910-1919", "1920-1929"];
+    }
+
+    getMachineFilterOptions() {
+        return Object.keys(this.selectedMachines);
+    }
+
+    setNameFilter(names) {
+        // Disable all first
+        for (const name in this.nameMaps) {
+            this._disableNameFilter(name);
+        }
+
+        // Enable selected
+        for (const name of names) {
+            this._enableNameFilter(name);
+        }
+
+        this.updateNameFilteredDataPoints();
+    }
+
+    _enableNameFilter(name) {
         if (!(name in this.nameMaps)) {
             console.error(`Name filter does not contain name: ${name}`);
             return;
         }
 
         if (this.nameMaps[name]["enabled"]) {
-            console.info(`Name filter for ${name} is already enabled`);
+            // console.info(`Name filter for ${name} is already enabled`);
             return;
         }
 
         this.nameMaps[name]["enabled"] = true;
-
-        this.updateNameFilteredDataPoints();
     }
 
-    disableNameFilter(name) {
+    _disableNameFilter(name) {
         if (!(name in this.nameMaps)) {
             console.error(`Name filter does not contain name: ${name}`);
             return;
         }
 
         if (!this.nameMaps[name]["enabled"]) {
-            console.info(`Name filter for ${name} is already disabled`);
+            // console.info(`Name filter for ${name} is already disabled`);
             return;
         }
 
         this.nameMaps[name]["enabled"] = false;
-
-        this.updateNameFilteredDataPoints();
     }
 
     updateNameFilteredDataPoints() {
@@ -579,19 +611,19 @@ class DisplayFilter {
 
     updateFilteredDataPoints() {
         this.currentlyVisiblePoints = this.nameFilteredDataPoints;
-    
+
         if (this.yearFilteredDataPoints.size > 0) {
             this.currentlyVisiblePoints = new Set([...this.currentlyVisiblePoints].filter(x => this.yearFilteredDataPoints.has(x)));
         }
-    
+
         if (this.machineFilteredDataPoints.size > 0) {
             this.currentlyVisiblePoints = new Set([...this.currentlyVisiblePoints].filter(x => this.machineFilteredDataPoints.has(x)));
         }
-    
+
         if (this.decFilteredDataPoints.size > 0) {
             this.currentlyVisiblePoints = new Set([...this.currentlyVisiblePoints].filter(x => this.decFilteredDataPoints.has(x)));
         }
-    
+
         if (this.raFilteredDataPoints.size > 0) {
             this.currentlyVisiblePoints = new Set([...this.currentlyVisiblePoints].filter(x => this.raFilteredDataPoints.has(x)));
         }
@@ -619,16 +651,78 @@ class DisplayFilter {
 }
 const DF = new DisplayFilter();
 
+function getSelectedOptions(selectElement) {
+    return [...selectElement.options].filter(o => o.selected).map(o => o.value);
+}
+
+class FilterForm {
+
+    nameSelector;
+    rightAscensionSelector;
+    declinationSelector;
+    yearSelector;
+    machineSelector;
+
+    constructor() {
+    }
+
+    init() {
+        this.nameSelector = document.getElementById("observer");
+        this.rightAscensionSelector = document.getElementById("rightAscension");
+        this.declinationSelector = document.getElementById("declination");
+        this.yearSelector = document.getElementById("year");
+        this.machineSelector = document.getElementById("machine");
+
+        this.nameSelector.onchange = () => {
+            // const selectedItems = [...this.nameSelector.options].filter(o => o.selected).map(o => o.value);
+            const selectedItems = getSelectedOptions(this.nameSelector);
+            DF.setNameFilter(selectedItems);
+        }
+    }
+
+    registerOptions(selector, options) {
+        selector.innerHTML = "";
+        for (const optionName of options) {
+            let option = document.createElement("option");
+            option.value = optionName;
+            option.innerHTML = optionName;
+            selector.appendChild(option);
+        }
+    }
+
+    registerNameOptions(names) {
+        this.registerOptions(this.nameSelector, names);
+    }
+
+    registerRAOptions(raValues) {
+        this.registerOptions(this.rightAscensionSelector, raValues);
+    }
+
+    registerDeclinationOptions(decValues) {
+        this.registerOptions(this.declinationSelector, decValues);
+    }
+
+    registerYearOptions(years) {
+        this.registerOptions(this.yearSelector, years);
+    }
+
+    registerMachineOptions(machines) {
+        this.registerOptions(this.machineSelector, machines);
+    }
+}
+const FF = new FilterForm();
+
+
 const imageCount = {
-     1: 29,
-     2: 50,
-     3: 55,
-     4: 41,
-     5: 58,
-     6: 64,
-     7: 58,
-     8: 55,
-     9: 61,
+    1: 29,
+    2: 50,
+    3: 55,
+    4: 41,
+    5: 58,
+    6: 64,
+    7: 58,
+    8: 55,
+    9: 61,
     10: 55,
     11: 61,
     12: 64,
@@ -722,7 +816,7 @@ var config = {
         exponent: -0.28, // Scale exponent for star size, larger = more linear
         data: 'stars.6.json' // Data source for stellar data
         //data: 'stars.8.json' // Alternative deeper data source for stellar data
-      },
+    },
     dsos: { show: false },
     mw: {
         style: { fill: "#996", opacity: 0.1 }
@@ -753,12 +847,14 @@ var jsonLine = {
 
 
 function setup() {
+    console.log("Running setup");
+
     for (let i = 1; i <= 57; i++) {
         const indexString = i < 10 ? "0" + i : "" + i;
         const path = `data-custom/signatures/${indexString}`;
         const frameName = "frame_%%_delay-0.1s.png";
         const numImages = imageCount[indexString];
-    
+
         animatedImages[i] = new AnimatedImage(
             i,
             path,
@@ -777,122 +873,152 @@ function setup() {
                     nameData["IDs"]
                 );
             }
-        }
-    );
+        })
+        .then(() => {
+            // Load data
+            fetch(PLATE_DATA_FILE)
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
 
-    // Load data
-    fetch(PLATE_DATA_FILE)
-        .then(response => response.json())
-        .then(data => {
-            console.log(data);
+                    // Create data points for every json object
+                    for (const point of data) {
+                        const tempDataPoint = new DataPoint(
+                            point["id"],
+                            point["dec"],
+                            point["ra"],
+                            point["year"],
+                            point["machine"]
+                        );
 
-            // Create data points for every json object
-            for (const point of data) {
-                const tempDataPoint = new DataPoint(
-                    point["id"],
-                    point["dec"],
-                    point["ra"],
-                    point["year"],
-                    point["machine"]
-                );
+                        // Register with filter
+                        DF.registerDataPoint(tempDataPoint);
 
-                // Register with filter
-                DF.registerDataPoint(tempDataPoint);
-
-                // Register point on the map
-                jsonLine["features"].push(
-                    {
-                        "type": "Feature",
-                        "uid": tempDataPoint.uid,
-                        "image_id": point["id"],
-                        "properties": {
-                            "loc": [
-                                hour2degree(point["ra"]), point["dec"]
-                            ]
-                        }
-                    }
-                );
-            }
-
-            Celestial.add({
-                type: "line",
-            
-                callback: function (error, json) {
-            
-                    if (error) return console.warn(error);
-                    // Load the geoJSON file and transform to correct coordinate system, if necessary
-                    var asterism = Celestial.getData(jsonLine, config.transform);
-            
-                    // Add to celestial objects container in d3
-                    Celestial.container.selectAll(".asterisms")
-                        .data(asterism.features)
-                        .enter().append("path")
-                        .attr("class", "ast");
-                    // Trigger redraw to display changes
-                    Celestial.redraw();
-                },
-            
-                redraw: function () {
-                    // Select the added objects by class name as given previously
-                    Celestial.container.selectAll(".ast").each(function (d) {
-                        if (DF.pointDisplaying(d.uid)) {
-                            // Set line styles
-                            Celestial.setStyle(lineStyle);
-                            // Project objects on map
-                            Celestial.map(d);
-                            // draw on canvas
-                            Celestial.context.fill();
-                            Celestial.context.stroke();
-
-                
-                            // If point is visible (this doesn't work automatically for points)
-                            if (Celestial.clip(d.properties.loc)) {
-                                // get point coordinates
-                                pt = Celestial.mapProjection(d.properties.loc);
-                                // Draw a helpful rect (TEMP)
-                                Celestial.context.rect(pt[0], pt[1], 10, 10);
-                                Celestial.context.fill();
-
-                                if (animatedImages[d.image_id] != undefined) {
-                                    const currentImage = animatedImages[d.image_id].getImage();
-                                    if (currentImage == undefined) {
-                                        return;
-                                    }
-
-                                    const imgWidth = Celestial.context.canvas.width / 10;
-                                    const imgHeight = currentImage.height / (currentImage.width / imgWidth);
-                                    const xOff = imgWidth / 2;
-                                    const yOff = imgHeight / 2;
-                                    Celestial.context.drawImage(currentImage, pt[0] - xOff, pt[1] - yOff, imgWidth, imgHeight);
+                        // Register point on the map
+                        jsonLine["features"].push(
+                            {
+                                "type": "Feature",
+                                "uid": tempDataPoint.uid,
+                                "image_id": point["id"],
+                                "properties": {
+                                    "loc": [
+                                        hour2degree(point["ra"]), point["dec"]
+                                    ]
                                 }
                             }
+                        );
+                    }
+
+                    Celestial.add({
+                        type: "line",
+
+                        callback: function (error, json) {
+
+                            if (error) return console.warn(error);
+                            // Load the geoJSON file and transform to correct coordinate system, if necessary
+                            var asterism = Celestial.getData(jsonLine, config.transform);
+
+                            // Add to celestial objects container in d3
+                            Celestial.container.selectAll(".asterisms")
+                                .data(asterism.features)
+                                .enter().append("path")
+                                .attr("class", "ast");
+                            // Trigger redraw to display changes
+                            Celestial.redraw();
+                        },
+
+                        redraw: function () {
+                            // Select the added objects by class name as given previously
+                            Celestial.container.selectAll(".ast").each(function (d) {
+                                if (DF.pointDisplaying(d.uid)) {
+                                    // Set line styles
+                                    Celestial.setStyle(lineStyle);
+                                    // Project objects on map
+                                    Celestial.map(d);
+                                    // draw on canvas
+                                    Celestial.context.fill();
+                                    Celestial.context.stroke();
+
+
+                                    // If point is visible (this doesn't work automatically for points)
+                                    if (Celestial.clip(d.properties.loc)) {
+                                        // get point coordinates
+                                        pt = Celestial.mapProjection(d.properties.loc);
+                                        // Draw a helpful rect (TEMP)
+                                        Celestial.context.rect(pt[0], pt[1], 10, 10);
+                                        Celestial.context.fill();
+
+                                        if (animatedImages[d.image_id] != undefined) {
+                                            const currentImage = animatedImages[d.image_id].getImage();
+                                            if (currentImage == undefined) {
+                                                return;
+                                            }
+
+                                            const imgWidth = Celestial.context.canvas.width / 10;
+                                            const imgHeight = currentImage.height / (currentImage.width / imgWidth);
+                                            const xOff = imgWidth / 2;
+                                            const yOff = imgHeight / 2;
+                                            Celestial.context.drawImage(currentImage, pt[0] - xOff, pt[1] - yOff, imgWidth, imgHeight);
+                                        }
+                                    }
+                                }
+                            });
                         }
                     });
-                }
-            });
 
 
-            Celestial.display(config);
+                    Celestial.display(config);
 
-            d3.select('#celestial-map').on('mousedown', function () { clearInterval(refreshInterval) })
-            d3.select('#celestial-map').on('mouseup', function () { 
-                refreshInterval = setInterval(
-                    () => {
-                        Celestial.redraw();
-                    },
-                    20
-                );
-            });
+                    d3.select('#celestial-map').on('mousedown', function () { clearInterval(refreshInterval) })
+                    d3.select('#celestial-map').on('mouseup', function () {
+                        refreshInterval = setInterval(
+                            () => {
+                                for (const imageID in animatedImages) {
+                                    if (animatedImages[imageID].loaded) {
+                                        animatedImages[imageID].nextImage();
+                                    }
+                                }
+                                Celestial.redraw();
+                            },
+                            20
+                        );
+                    });
 
-            refreshInterval = setInterval(
-                () => {
-                    Celestial.redraw();
-                },
-                20
-            );
-        })
-        .catch(error => console.log(`Error loading location data: ${error}`))
+                    refreshInterval = setInterval(
+                        () => {
+                            for (const imageID in animatedImages) {
+                                if (animatedImages[imageID].loaded) {
+                                    animatedImages[imageID].nextImage();
+                                }
+                            }
+                            Celestial.redraw();
+                        },
+                        20
+                    );
+                })
+                .catch(error => console.log(`Error loading location data: ${error}`));
+        }
+        )
+        .then(() => {
+            // Load data into combo boxes
+            FF.init();
 
+            // Populate combo boxes
+            const observerNames = DF.getNameFilterOptions();
+            FF.registerNameOptions(observerNames);
+
+            const raValues = DF.getRAFilterOptions();
+            FF.registerRAOptions(raValues);
+
+            const decValues = DF.getDecFilterOptions();
+            FF.registerDeclinationOptions(decValues);
+
+            const yearValues = DF.getYearFilterOptions();
+            FF.registerYearOptions(yearValues);
+
+            const machineValues = DF.getMachineFilterOptions();
+            FF.registerMachineOptions(machineValues);
+        });
     // fetch("data-custom/plateLocations.json")
     //     .then(response => response.json())
     //     .then(data => {
@@ -921,89 +1047,88 @@ function setup() {
 
     //         console.log(jsonLine);
 
-        //     Celestial.add({
-        //         type: "line",
-            
-        //         callback: function (error, json) {
-            
-        //             if (error) return console.warn(error);
-        //             // Load the geoJSON file and transform to correct coordinate system, if necessary
-        //             var asterism = Celestial.getData(jsonLine, config.transform);
-            
-        //             // Add to celestial objects container in d3
-        //             Celestial.container.selectAll(".asterisms")
-        //                 .data(asterism.features)
-        //                 .enter().append("path")
-        //                 .attr("class", "ast");
-        //             // Trigger redraw to display changes
-        //             Celestial.redraw();
-        //         },
-            
-        //         redraw: function () {
-        //             // Select the added objects by class name as given previously
-        //             Celestial.container.selectAll(".ast").each(function (d) {
-        //                 // Set line styles
-        //                 Celestial.setStyle(lineStyle);
-        //                 // Project objects on map
-        //                 Celestial.map(d);
-        //                 // draw on canvas
-        //                 Celestial.context.fill();
-        //                 Celestial.context.stroke();
+    //     Celestial.add({
+    //         type: "line",
 
-            
-        //                 // If point is visible (this doesn't work automatically for points)
-        //                 if (Celestial.clip(d.properties.loc)) {
-        //                     // get point coordinates
-        //                     pt = Celestial.mapProjection(d.properties.loc);
-        //                     Celestial.context.rect(pt[0], pt[1], 10, 10);
-        //                     Celestial.context.fill();
-        //                     // Set text styles
-        //                     // Celestial.setTextStyle(textStyle);
-        //                     // and draw text on canvas
-        //                     // Celestial.context.fillText(d.properties.n, pt[0], pt[1]);
-        //                     if (animatedImages[d.id] != undefined) {
-        //                         const currentImage = animatedImages[d.id].getImage();
-        //                         // const xOff = 0;
-        //                         // const yOff = 0;
-        //                         // const xOff = currentImage.width / 2;
-        //                         // const yOff = currentImage.height / 2;
-        //                         const imgWidth = Celestial.context.canvas.width / 10;
-        //                         const imgHeight = currentImage.height / (currentImage.width / imgWidth);
-        //                         const xOff = imgWidth / 2;
-        //                         const yOff = imgHeight / 2;
-        //                         Celestial.context.drawImage(currentImage, pt[0] - xOff, pt[1] - yOff, imgWidth, imgHeight);
-        //                         // console.log(image)
-        //                     }
-        //                 }
-        //             });
-        //         }
-        //     });
+    //         callback: function (error, json) {
+
+    //             if (error) return console.warn(error);
+    //             // Load the geoJSON file and transform to correct coordinate system, if necessary
+    //             var asterism = Celestial.getData(jsonLine, config.transform);
+
+    //             // Add to celestial objects container in d3
+    //             Celestial.container.selectAll(".asterisms")
+    //                 .data(asterism.features)
+    //                 .enter().append("path")
+    //                 .attr("class", "ast");
+    //             // Trigger redraw to display changes
+    //             Celestial.redraw();
+    //         },
+
+    //         redraw: function () {
+    //             // Select the added objects by class name as given previously
+    //             Celestial.container.selectAll(".ast").each(function (d) {
+    //                 // Set line styles
+    //                 Celestial.setStyle(lineStyle);
+    //                 // Project objects on map
+    //                 Celestial.map(d);
+    //                 // draw on canvas
+    //                 Celestial.context.fill();
+    //                 Celestial.context.stroke();
 
 
-        //     Celestial.display(config);
+    //                 // If point is visible (this doesn't work automatically for points)
+    //                 if (Celestial.clip(d.properties.loc)) {
+    //                     // get point coordinates
+    //                     pt = Celestial.mapProjection(d.properties.loc);
+    //                     Celestial.context.rect(pt[0], pt[1], 10, 10);
+    //                     Celestial.context.fill();
+    //                     // Set text styles
+    //                     // Celestial.setTextStyle(textStyle);
+    //                     // and draw text on canvas
+    //                     // Celestial.context.fillText(d.properties.n, pt[0], pt[1]);
+    //                     if (animatedImages[d.id] != undefined) {
+    //                         const currentImage = animatedImages[d.id].getImage();
+    //                         // const xOff = 0;
+    //                         // const yOff = 0;
+    //                         // const xOff = currentImage.width / 2;
+    //                         // const yOff = currentImage.height / 2;
+    //                         const imgWidth = Celestial.context.canvas.width / 10;
+    //                         const imgHeight = currentImage.height / (currentImage.width / imgWidth);
+    //                         const xOff = imgWidth / 2;
+    //                         const yOff = imgHeight / 2;
+    //                         Celestial.context.drawImage(currentImage, pt[0] - xOff, pt[1] - yOff, imgWidth, imgHeight);
+    //                         // console.log(image)
+    //                     }
+    //                 }
+    //             });
+    //         }
+    //     });
 
-        //     d3.select('#celestial-map').on('mousedown', function () { clearInterval(refreshInterval) })
-        //     d3.select('#celestial-map').on('mouseup', function () { 
-        //         refreshInterval = setInterval(
-        //             () => {
-        //                 Celestial.redraw();
-        //             },
-        //             20
-        //         );
-        //     });
 
-        //     refreshInterval = setInterval(
-        //         () => {
-        //             Celestial.redraw();
-        //         },
-        //         20
-        //     );
-        // })
-        // .catch(error => console.log(`Error loading location data: ${error}`))
+    //     Celestial.display(config);
+
+    //     d3.select('#celestial-map').on('mousedown', function () { clearInterval(refreshInterval) })
+    //     d3.select('#celestial-map').on('mouseup', function () { 
+    //         refreshInterval = setInterval(
+    //             () => {
+    //                 Celestial.redraw();
+    //             },
+    //             20
+    //         );
+    //     });
+
+    //     refreshInterval = setInterval(
+    //         () => {
+    //             Celestial.redraw();
+    //         },
+    //         20
+    //     );
+    // })
+    // .catch(error => console.log(`Error loading location data: ${error}`))
 }
 
 setup();
-
 /*
 
         {
