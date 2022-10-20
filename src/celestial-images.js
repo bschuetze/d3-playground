@@ -853,7 +853,7 @@ function setup() {
         const indexString = i < 10 ? "0" + i : "" + i;
         const path = `data-custom/signatures/${indexString}`;
         const frameName = "frame_%%_delay-0.1s.png";
-        const numImages = imageCount[indexString];
+        const numImages = imageCount[i];
 
         animatedImages[i] = new AnimatedImage(
             i,
