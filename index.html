@@ -12,6 +12,7 @@
   <script type="text/javascript" src="src/celestial.min.js"></script>
 
   <link rel="stylesheet" href="celestial.css">
+  <link rel="stylesheet" href="index.css">
 </head>
 <body>
   <div style="overflow:hidden;">
@@ -19,33 +20,41 @@
   </div>
   <script type="text/javascript" src="src/celestial-images.js"></script>
 
-  <!-- <script type="text/javascript">
+  <script type="text/javascript">
+    // Button logic
+    function filterClick() {
+      const defaultPosition = "80";
+      let filterElement = document.getElementById("filter");
+      if (filter.style.transform.includes(defaultPosition)) {
+        filterElement.style.transform = "translateX(0%)";
+      } else {
+        filterElement.style.transform = `translateX(${defaultPosition}%)`;
+      }
+    }
+  </script>
 
-Celestial.display({
-  disableAnimations: false,
-  form: true,
-  formFields: {download: true},
-  datapath: "../data/",
-  stars: {propername: true}
-});
-
-  </script> -->
-  <form>
-    <label for="observer">Name:</label>
-    <select name="observer" id="observer" multiple></select>
-    <br />
-    <label for="rightAscension">Right Ascension:</label>
-    <select name="rightAscension" id="rightAscension" multiple></select>
-    <br />
-    <label for="declination">Declination:</label>
-    <select name="declination" id="declination" multiple></select>
-    <br />
-    <label for="year">Year:</label>
-    <select name="year" id="year" multiple></select>
-    <br />
-    <label for="machine">Machine:</label>
-    <select name="machine" id="machine" multiple></select>
-  </form>
+  <div id="filter">
+    <input type="button" id="filter-pane-button" value="=" onclick="filterClick()">
+    <div id="filter-wrapper">
+      <h2>Filter</h2>
+      <form id="filter-form">
+        <label for="observer">Name:</label>
+        <select name="observer" id="observer" size="6" multiple></select>
+        <br />
+        <label for="rightAscension">Right Ascension:</label>
+        <select name="rightAscension" id="rightAscension" size="4" multiple></select>
+        <br />
+        <label for="declination">Declination:</label>
+        <select name="declination" id="declination" size="4" multiple></select>
+        <br />
+        <label for="year">Year:</label>
+        <select name="year" id="year" size="4" multiple></select>
+        <br />
+        <label for="machine">Machine:</label>
+        <select name="machine" id="machine" size="9" multiple></select>
+      </form>
+    </div>
+  </div>
   <footer id="d3-celestial-footer">
     <p><a href="https://github.com/ofrohn/d3-celestial"><b>D3-Celestial</b></a> released under <a href="http://opensource.org/licenses/BSD-3-Clause">BSD license</a>. Copyright 2015-19 <a href="http://armchairastronautics.blogspot.com/" rel="author">Olaf Frohn</a>.</p>
   </footer>

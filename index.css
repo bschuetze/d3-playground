@@ -1,0 +1,47 @@
+#filter {
+    height: 100%;
+    width: auto;
+    position: fixed;
+    display: flex;
+    z-index: 100;
+    top: 0;
+    right: 0;
+    transition: transform 0.3s;
+    transform: translateX(0%);
+}
+
+#filter-wrapper {
+    background-color: white;
+    padding: 10px;
+}
+
+#filter-wrapper > h2 {
+    margin: 0px;
+}
+
+#filter-form {
+    margin: 10px;
+}
+
+#filter-form > label {
+    font-weight: bold;
+}
+
+#filter-form > select {
+    padding: 4px;
+    margin: 4px;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+#filter-pane-button {
+    width:32px; 
+    height:32px;
+    margin-top: 20px;
+    margin-right: 12px;
+    background: rgba(255,255,255,0.5); 
+    border:1px solid #000; 
+    border-radius:3px;
+    font: normal bold 24px/1 Consolas, Courier, 'Courier New', monospace; 
+    cursor:pointer;
+}
